@@ -92,6 +92,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const typePassport = document.getElementById('type-passport');
     const typeVisa = document.getElementById('type-visa');
     
+    // Custom overrides DOM
+    const chkOverrideDimensions = document.getElementById('chk-override-dimensions');
+    const overrideInputsContainer = document.getElementById('override-inputs-container');
+    const inputCustomWidth = document.getElementById('input-custom-width');
+    const inputCustomHeight = document.getElementById('input-custom-height');
+    const inputCustomDpi = document.getElementById('input-custom-dpi');
+    const inputCustomDimText = document.getElementById('input-custom-dimtext');
+    
     const specName = document.getElementById('spec-name');
     const specDim = document.getElementById('spec-dim');
     const specRules = document.getElementById('spec-rules');
@@ -249,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Wait for image to load to initialize
         imageToCrop.onload = () => {
-            const spec = SPECS[currentSpec];
+            const spec = getActiveSpec();
             
             cropper = new Cropper(imageToCrop, {
                 aspectRatio: spec.aspectRatio,
@@ -296,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyRecommendedCrop() {
         if (!cropper) return;
         
-        const spec = SPECS[currentSpec];
+        const spec = getActiveSpec();
         const rec = recommendations ? recommendations[currentSpec] : null;
         
         if (rec) {
@@ -323,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ----------------------------------------------------
-    // SPECIFICATION UPDATE (ON DROPDOWN CHANGE)
+    // SPECIFICATION UPDATE (ON DROPDOWN CHANGE & CUSTOM OVERRIDES)
     // ----------------------------------------------------
     function getActiveSpecKey() {
         const country = selectCountry.value;
@@ -338,10 +346,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function getActiveSpec() {
+        const specKey = getActiveSpecKey();
+        const baseSpec = SPECS[specKey];
+        
+        if (chkOverrideDimensions.checked) {
+            const customWidth = parseInt(inputCustomWidth.value) || baseSpec.width;
+            const customHeight = parseInt(inputCustomHeight.value) || baseSpec.height;
+            const customDpi = parseInt(inputCustomDpi.value) || baseSpec.dpi || 300;
+            const customDimText = inputCustomDimText.value.trim() || `${customWidth} x ${customHeight} px`;
+            
+            return {
+                ...baseSpec,
+                name: `${baseSpec.name} (Custom)`,
+                width: customWidth,
+                height: customHeight,
+                aspectRatio: customWidth / customHeight,
+                dimText: customDimText,
+                dpi: customDpi
+            };
+        }
+        return baseSpec;
+    }
+
     function updateActiveSpec() {
         const specKey = getActiveSpecKey();
         currentSpec = specKey;
-        const spec = SPECS[specKey];
+        const spec = getActiveSpec();
         
         // Update details text
         specName.textContent = spec.name;
@@ -371,10 +402,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function handlePresetChange() {
+        if (chkOverrideDimensions.checked) {
+            const specKey = getActiveSpecKey();
+            const baseSpec = SPECS[specKey];
+            inputCustomWidth.value = baseSpec.width;
+            inputCustomHeight.value = baseSpec.height;
+            inputCustomDpi.value = baseSpec.dpi || 300;
+            inputCustomDimText.value = baseSpec.dimText;
+        }
+        updateActiveSpec();
+    }
+
+    // Toggle Override Checkbox
+    chkOverrideDimensions.addEventListener('change', (e) => {
+        const specKey = getActiveSpecKey();
+        const baseSpec = SPECS[specKey];
+        
+        if (e.target.checked) {
+            overrideInputsContainer.classList.remove('collapsed');
+            if (!inputCustomWidth.value) inputCustomWidth.value = baseSpec.width;
+            if (!inputCustomHeight.value) inputCustomHeight.value = baseSpec.height;
+            if (!inputCustomDpi.value) inputCustomDpi.value = baseSpec.dpi || 300;
+            if (!inputCustomDimText.value) inputCustomDimText.value = baseSpec.dimText;
+        } else {
+            overrideInputsContainer.classList.add('collapsed');
+        }
+        updateActiveSpec();
+    });
+
+    // Handle inputs for custom dimensions
+    [inputCustomWidth, inputCustomHeight, inputCustomDpi, inputCustomDimText].forEach(input => {
+        input.addEventListener('input', updateActiveSpec);
+    });
+
     // Dropdown change events
-    selectCountry.addEventListener('change', updateActiveSpec);
-    typePassport.addEventListener('change', updateActiveSpec);
-    typeVisa.addEventListener('change', updateActiveSpec);
+    selectCountry.addEventListener('change', handlePresetChange);
+    typePassport.addEventListener('change', handlePresetChange);
+    typeVisa.addEventListener('change', handlePresetChange);
 
     // ----------------------------------------------------
     // IMAGE ADJUSTMENTS (REALTIME FILTERS)
@@ -595,6 +660,14 @@ document.addEventListener('DOMContentLoaded', () => {
         colorBtns.forEach(b => b.classList.remove('active'));
         colorBtns[0].classList.add('active');
         selectedBgColor = '#FFFFFF';
+        
+        // Reset Overrides
+        chkOverrideDimensions.checked = false;
+        overrideInputsContainer.classList.add('collapsed');
+        inputCustomWidth.value = '';
+        inputCustomHeight.value = '';
+        inputCustomDpi.value = '';
+        inputCustomDimText.value = '';
     }
 
     function showLoading(msg) {

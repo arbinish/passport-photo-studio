@@ -151,6 +151,34 @@
                                         <p id="spec-rules">Face: 50%-69% of height. Eyes: 56%-69% from bottom.</p>
                                     </div>
                                 </div>
+
+                                <!-- Custom Override Dimensions -->
+                                <div class="switch-row" style="margin-top: 1.25rem; margin-bottom: 0.5rem;">
+                                    <span class="switch-label" style="font-size: 0.815rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.025em;">Override dimensions</span>
+                                    <label class="switch">
+                                        <input type="checkbox" id="chk-override-dimensions">
+                                        <span class="switch-slider"></span>
+                                    </label>
+                                </div>
+
+                                <div id="override-inputs-container" class="override-inputs-grid collapsed">
+                                    <div class="input-col">
+                                        <label for="input-custom-width">Width (px)</label>
+                                        <input type="number" id="input-custom-width" min="100" max="4000" placeholder="e.g., 630">
+                                    </div>
+                                    <div class="input-col">
+                                        <label for="input-custom-height">Height (px)</label>
+                                        <input type="number" id="input-custom-height" min="100" max="4000" placeholder="e.g., 810">
+                                    </div>
+                                    <div class="input-col">
+                                        <label for="input-custom-dpi">DPI</label>
+                                        <input type="number" id="input-custom-dpi" min="72" max="1200" placeholder="e.g., 300">
+                                    </div>
+                                    <div class="input-col">
+                                        <label for="input-custom-dimtext">Print Size</label>
+                                        <input type="text" id="input-custom-dimtext" placeholder="e.g., 35x45 mm">
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Image Adjustments Section -->
