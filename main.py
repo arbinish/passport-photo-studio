@@ -309,7 +309,7 @@ async def detect_image(file: UploadFile = File(...)):
             us_crop_x = (fx + fw/2.0) - us_crop_w/2.0
             us_crop_y = eye_y - 0.38 * us_crop_h
             
-            # India Passport (swapped to 35x45 mm = 413x531 px, ratio 35:45, face ~75%, eye ~40% from top)
+            # India Passport (swapped to 35x45 mm = 630x810 px, ratio 35:45, face ~75%, eye ~40% from top)
             in_pass_h = fh / 0.75
             in_pass_w = in_pass_h * (35.0 / 45.0)
             in_pass_x = (fx + fw/2.0) - in_pass_w/2.0

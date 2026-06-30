@@ -37,14 +37,15 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         in_passport: {
             name: "India Passport",
-            width: 413,
-            height: 531,
+            width: 630,
+            height: 810,
             aspectRatio: 35 / 45,
             dimText: "35 x 45 mm (3.5 x 4.5 cm)",
             rulesText: "Face: 70%-80% of height. Centered vertically and horizontally.",
             overlayId: "guide-face-oval",
             eyeY: 40,
-            chinY: 78
+            chinY: 78,
+            dpi: 457
         },
         in_visa: {
             name: "India Visa",
@@ -498,7 +499,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Update text
                 metaOutputDim.textContent = spec.dimText;
-                metaOutputPx.textContent = `${spec.width} x ${spec.height} px (300 DPI)`;
+                metaOutputPx.textContent = `${spec.width} x ${spec.height} px (${spec.dpi || 300} DPI)`;
                 
                 // Downloads Setup
                 btnDownloadSingle.dataset.url = data.processed_image;
