@@ -177,6 +177,53 @@ def img_to_base64(img_bgr_or_rgb, is_bgr=True):
     img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
     return f"data:image/jpeg;base64,{img_str}"
 
+SHADOW_MAX_CURVATURE = 0.8
+
+def remove_shadows_from_mask(img_small, mask_small):
+    """Drop cast shadows from the foreground mask so they are replaced with the new background.
+
+    GrabCut tends to keep the soft shadow a subject casts on the wall because it sits right
+    next to the person. A shadow is the wall colour made darker: same chromaticity (Lab a/b),
+    somewhat lower lightness, and smooth. Pixels that look like that and are connected to the
+    background are moved to the background. Skin, hair and clothing differ in chroma, are much
+    darker or are textured, so they are left alone.
+    """
+    bg_pixels = mask_small == 0
+    if bg_pixels.sum() < 100:
+        return mask_small
+
+    lab = cv2.cvtColor(img_small, cv2.COLOR_BGR2LAB).astype(np.float32)
+    L, a, b = lab[..., 0], lab[..., 1], lab[..., 2]
+
+    # Wall reference colour from pixels already classified as background
+    L_ref = np.median(L[bg_pixels])
+    a_ref = np.median(a[bg_pixels])
+    b_ref = np.median(b[bg_pixels])
+
+    chroma_dist = np.hypot(a - a_ref, b - b_ref)
+    darkness = L / max(L_ref, 1.0)
+
+    # Local texture: a shadow is a smooth ramp (near-zero curvature), faces/hair/fabric are not
+    L_blur = cv2.GaussianBlur(L, (5, 5), 0)
+    curvature = cv2.GaussianBlur(np.abs(cv2.Laplacian(L_blur, cv2.CV_32F)), (9, 9), 0)
+    smooth = curvature < SHADOW_MAX_CURVATURE
+
+    candidate = (chroma_dist < 3.5) & (darkness > 0.45) & (darkness < 1.1) & smooth
+    candidate = candidate.astype(np.uint8)
+    # Opening removes thin slivers such as hair strands and edge pixels
+    candidate = cv2.morphologyEx(candidate, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+
+    # Keep only candidate regions that touch the real background
+    region = (candidate | bg_pixels.astype(np.uint8)).astype(np.uint8)
+    _, labels = cv2.connectedComponents(region, connectivity=4)
+    bg_labels = np.unique(labels[bg_pixels])
+    bg_labels = bg_labels[bg_labels != 0]
+    shadow = np.isin(labels, bg_labels) & (candidate == 1)
+
+    cleaned = mask_small.copy()
+    cleaned[shadow] = 0
+    return cleaned
+
 def remove_background_optimized_mask(img, face_rect=None):
     h, w = img.shape[:2]
     
@@ -198,8 +245,13 @@ def remove_background_optimized_mask(img, face_rect=None):
     margin_w = max(1, int(w_s * 0.05))
     margin_h = max(1, int(h_s * 0.05))
     mask[0:margin_h, :] = cv2.GC_BGD
-    mask[:, 0:margin_w] = cv2.GC_BGD
-    mask[:, w_s - margin_w:] = cv2.GC_BGD
+    # Side margins are only definite background above the shoulders; further down they
+    # usually contain the subject's clothing, which would teach GrabCut that it is background
+    side_h = h_s
+    if face_rect:
+        side_h = min(h_s, int((face_rect["y"] + face_rect["h"]) * scale))
+    mask[0:side_h, 0:margin_w] = cv2.GC_BGD
+    mask[0:side_h, w_s - margin_w:] = cv2.GC_BGD
     
     # If we have a face rect, set probable foreground and definite foreground
     if face_rect:
@@ -223,6 +275,11 @@ def remove_background_optimized_mask(img, face_rect=None):
         
         body_mask = np.zeros((h_s, w_s), dtype=np.uint8)
         cv2.rectangle(body_mask, (x1, y1), (x2, y2), 1, -1)
+        # Shoulders and torso are wider than the head
+        sx1 = max(0, int(fx_s - fw_s * 1.0))
+        sx2 = min(w_s, int(fx_s + fw_s * 2.0))
+        sy1 = min(h_s, int(fy_s + fh_s * 1.0))
+        cv2.rectangle(body_mask, (sx1, sy1), (sx2, y2), 1, -1)
         mask[(body_mask == 1) & (mask != cv2.GC_BGD) & (mask != cv2.GC_FGD)] = cv2.GC_PR_FGD
     else:
         # Default probable foreground in the center
@@ -243,6 +300,8 @@ def remove_background_optimized_mask(img, face_rect=None):
         mask_small = np.zeros((h_s, w_s), np.uint8)
         cv2.rectangle(mask_small, (int(w_s*0.2), int(h_s*0.1)), (int(w_s*0.8), h_s), 255, -1)
         
+    mask_small = remove_shadows_from_mask(img_small, mask_small)
+
     # Resize mask back to original resolution
     mask_large = cv2.resize(mask_small, (w, h), interpolation=cv2.INTER_LINEAR)
     mask_large = cv2.GaussianBlur(mask_large, (5, 5), 0)

@@ -16,7 +16,7 @@ Powered by **FastAPI** on the backend, **Cropper.js** with customized **SVG guid
   - **ICAO Generic**: Standard EU/UK size (35x45 mm, 70-80% face height).
 - **Interactive Crop & Dynamic SVG Overlays**: Syncs an SVG overlay (showing standard face oval, center axes, eye and chin guidelines) *exactly* on top of the interactive crop box.
 - **Advanced Background Removal**: Employs an optimized, downscaled OpenCV GrabCut algorithm using a face-oval seed (definite foreground) and image borders (definite background) to output smooth, clean cutouts in milliseconds.
-- **Color Customization**: Replace the background with Pure White, Off-White, Light Blue, or Light Gray to satisfy specific embassy guidelines.
+- **Color Customization**: Replace the background with Pure White, Off-White, Light Blue, Light Gray, or Grey to satisfy specific embassy guidelines. Cast shadows on the original backdrop are stripped from the cutout so they do not carry over.
 - **Real-time Image Enhancements**: Adjust brightness, contrast, saturation, and rotation with sliders providing instant visual preview in the browser before final high-fidelity rendering.
 - **Print Layout Sheet Generator**: Tiles 6 copies of the processed photograph onto a standard 4x6 inch print template (1200x1800 px at 300 DPI) complete with light-gray cut lines.
 

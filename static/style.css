@@ -783,7 +783,8 @@ input[type="range"]::-webkit-slider-thumb:hover {
     font-size: 0.75rem;
 }
 
-.color-btn[data-color="#FFFFFF"].active::after {
+.color-btn[data-color="#FFFFFF"].active::after,
+.color-btn[data-color="#D3D3D3"].active::after {
     color: black;
 }
 
